@@ -1,0 +1,23 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2008
+
+Project("{9BEA1589-0F18-EF35-A127-67FEF5D234B8}") = "dojo", "Assembly-CSharp.csproj", "{F4C1D93C-3D1A-2021-3819-F11676CC66B1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F4C1D93C-3D1A-2021-3819-F11676CC66B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4C1D93C-3D1A-2021-3819-F11676CC66B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4C1D93C-3D1A-2021-3819-F11676CC66B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4C1D93C-3D1A-2021-3819-F11676CC66B1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = Assembly-CSharp.csproj
+	EndGlobalSection
+EndGlobal
