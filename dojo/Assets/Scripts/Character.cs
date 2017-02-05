@@ -3,36 +3,18 @@ using System.Collections;
 
 public class Character : MonoBehaviour {
 
-	private class School {
 
-		public Vector3 location;
-		public int currentLevel;
-		public float attraction;
-
-		public School (GameObject building){
-			location = new Vector3(building.transform.position.x,building.transform.position.y,(building.transform.position.z-1));
-			currentLevel = building.GetComponentInChildren<Structure> ().level;
-			attraction = 0;
-		}
-
-		public float Attraction (GameObject character, int charLevel){
-			float distance = Mathf.Abs(Vector3.Distance (location, character.transform.position));
-			int levelDelta = currentLevel - charLevel;
-			float attract = levelDelta / distance;
-			return attract;
-		}
-
-	}
 
 	public int birthYear;
 	public int age;
 	public int fame;
 	public bool active;
-	public GameObject[] village;
 	public GameManager gameManager;
+	public GameObject grave;
+	public GameObject graveHolder;
 
-	School[] preference;
-	School activeSchool;
+	Structure[] preference;
+	Structure activeSchool;
 
 	int actionThreshold;
 	int determination;
@@ -48,13 +30,14 @@ public class Character : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		gameManager = GameObject.Find ("GameManager").GetComponent<GameManager> ();
+		graveHolder = GameObject.Find ("Graveholder");
 		birthYear = gameManager.year - Mathf.RoundToInt(Random.Range(10f,25f));
-		active = true;
+		active = false;
 		actionThreshold = 100;
 		determination = 30;
-		preference = new School[village.Length];
-		for (int i = 0; i < village.Length; i++) {
-			preference [i] = new School(village [i]);
+		preference = new Structure[gameManager.village.Length];
+		for (int i = 0; i < gameManager.village.Length; i++) {
+			preference [i] = gameManager.village [i];
 		}
 	}
 	
@@ -74,14 +57,15 @@ public class Character : MonoBehaviour {
 				strollDest = new Vector3(transform.position.x + (Random.Range (-2f, 2f)), 0.15f, transform.position.z + (Random.Range (-2f, 2f)));
 
 				GetComponent<NavMeshAgent> ().destination = strollDest;
-				GetComponent<NavMeshAgent> ().speed = 1.5f;
+				GetComponent<NavMeshAgent> ().speed = (1.5f * gameManager.timeScale);
+				GetComponent<NavMeshAgent> ().acceleration = (10 * gameManager.timeScale);
 
 				Debug.Log ("I'm resting");
 				passiveTimer += 10f;
 
 				float priority = 0;
-				School nextSchool = preference [0];
-				foreach (School i in preference) {
+				Structure nextSchool = preference [0];
+				foreach (Structure i in preference) {
 					i.attraction = i.Attraction (gameObject, 0);
 					if (i.attraction > priority) {
 						priority = i.attraction;
@@ -94,7 +78,9 @@ public class Character : MonoBehaviour {
 					activeTimer = gameManager.gameTime + determination;
 					activeSchool = nextSchool;
 					GetComponent<NavMeshAgent> ().destination = activeSchool.location;
-					GetComponent<NavMeshAgent> ().speed = 3.5f;
+					GetComponent<NavMeshAgent> ().speed = (3.5f * gameManager.timeScale);
+					GetComponent<NavMeshAgent> ().acceleration = (10 * gameManager.timeScale);
+					activeSchool.tenants.Add (this);
 				}
 			}
 		}
@@ -102,20 +88,21 @@ public class Character : MonoBehaviour {
 		//active behaviour
 		if (active) {
 
-			float fameGain = 0;
+			float xpGain = 0;
 
 			if (activeSchool != null && (Vector3.Distance (transform.position, activeSchool.location) < 1)) {
-				fameGain += 0.1f;
-				readiness -= 0.5f;
+				xpGain += 0.1f * gameManager.timeScale * activeSchool.level;
+				readiness -= 0.5f * gameManager.timeScale;
 			}
 
 			if (activeTimer <= gameManager.gameTime) {
 				Debug.Log ("I need to rest");
-				Debug.Log ("I've gained " + fameGain + " experience");
-				fame += Mathf.RoundToInt(fameGain);
-				fameGain = 0;
+				AttributeGain (xpGain, activeSchool);
+				xpGain = 0;
 				active = false;
 				passiveTimer = gameManager.gameTime + 1;
+				activeSchool.tenants.Remove (this);
+
 			}
 
 		}
@@ -124,8 +111,39 @@ public class Character : MonoBehaviour {
 
 	}
 
+
+	void AttributeGain(float xp, Structure school){
+		string attribute = "I wasted my life";
+
+		if (school.name == "dojo") {
+			attribute = "Stamina";
+			stamina += Mathf.RoundToInt(xp);
+		}
+		else if (school.name == "bath") {
+			health += Mathf.RoundToInt(xp);
+			attribute = "Health";
+		}
+		else if (school.name == "shrine") {
+			determination += Mathf.RoundToInt(xp);
+			attribute = "Determination";
+		}
+		else if (school.name == "library") {
+			fame += Mathf.RoundToInt(xp);
+			attribute = "Fame";
+		}
+		Debug.Log ("I've gained " + xp + " " + attribute);
+	}
+
+
 	void LateUpdate(){
 		transform.eulerAngles = new Vector3(0,0,0);
+		if (age > 65) {
+			Debug.Log ("My death contributes " + fame + " fame to the village!");
+			gameManager.villageFame += fame;
+			GameObject instance = Instantiate (grave, gameObject.transform.position, Quaternion.identity) as GameObject;
+			instance.transform.SetParent (graveHolder.transform);
+			Destroy (gameObject);
+		}
 	}
 
 }
