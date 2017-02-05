@@ -1,9 +1,22 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class Character : MonoBehaviour {
 
+	public class Attribute {
+		public string name;
+		public int value;
+		public int preference;
+		public Structure school;
 
+		public Attribute(string name, int value, int preference, GameObject school){
+			this.name = name;
+			this.value = value;
+			this.preference = preference;
+			this.school = school.GetComponent<Structure>();
+		}
+	}
 
 	public int birthYear;
 	public int age;
@@ -12,40 +25,54 @@ public class Character : MonoBehaviour {
 	public GameManager gameManager;
 	public GameObject grave;
 	public GameObject graveHolder;
+	public List <Attribute> skills = new List<Attribute>();
 
-	Structure[] preference;
-	Structure activeSchool;
+	public Structure[] preference;
+	public Structure activeSchool;
+
+	public Sprite[] sprites;
 
 	int actionThreshold;
-	int determination;
 	float readiness;
-	int yearning;
-	int health;
-	int stamina;
-	int altriusm;
 	float activeTimer;
 	float passiveTimer;
+	public Attribute stamina;
+	public Attribute health;
+	public Attribute determination;
 
 
 	// Use this for initialization
 	void Start () {
+
 		gameManager = GameObject.Find ("GameManager").GetComponent<GameManager> ();
 		graveHolder = GameObject.Find ("Graveholder");
 		birthYear = gameManager.year - Mathf.RoundToInt(Random.Range(10f,25f));
 		active = false;
 		actionThreshold = 100;
-		determination = 30;
+
+		SetAttributes ();
+
 		preference = new Structure[gameManager.village.Length];
 		for (int i = 0; i < gameManager.village.Length; i++) {
 			preference [i] = gameManager.village [i];
 		}
 	}
-	
+
+	public void SetAttributes(){
+		health = new Attribute ("health",Mathf.RoundToInt(Random.Range(0,10)),Mathf.RoundToInt(Random.Range(0,10)),GameObject.Find("bath"));
+		stamina = new Attribute ("stamina",Mathf.RoundToInt(Random.Range(0,10)),Mathf.RoundToInt(Random.Range(0,10)),GameObject.Find("dojo"));
+		determination = new Attribute ("determination",Mathf.RoundToInt(Random.Range(0,10)),Mathf.RoundToInt(Random.Range(0,10)),GameObject.Find("shrine"));
+
+		skills.Add (health);
+		skills.Add (determination);
+		skills.Add (stamina);
+
+	}
+
 	// Update is called once per frame
 	void Update () {
 		age = gameManager.year - birthYear;
 		//Debug.Log ("It's the year " + gameManager.year + " and I'm " + age + " years old.");
-
 
 		//passive behaviour
 		if (!active) {
@@ -63,19 +90,12 @@ public class Character : MonoBehaviour {
 				Debug.Log ("I'm resting");
 				passiveTimer += 10f;
 
-				float priority = 0;
-				Structure nextSchool = preference [0];
-				foreach (Structure i in preference) {
-					i.attraction = i.Attraction (gameObject, 0);
-					if (i.attraction > priority) {
-						priority = i.attraction;
-						nextSchool = i;
-					}
-				}
-				if (priority * readiness > actionThreshold) {
+				Structure nextSchool = SetPriority();
+
+				if (readiness > actionThreshold) {
 					active = true;
 					Debug.Log ("I'm getting active");
-					activeTimer = gameManager.gameTime + determination;
+					activeTimer = gameManager.gameTime + determination.value;
 					activeSchool = nextSchool;
 					GetComponent<NavMeshAgent> ().destination = activeSchool.location;
 					GetComponent<NavMeshAgent> ().speed = (3.5f * gameManager.timeScale);
@@ -102,6 +122,7 @@ public class Character : MonoBehaviour {
 				active = false;
 				passiveTimer = gameManager.gameTime + 1;
 				activeSchool.tenants.Remove (this);
+				SetSprite ();
 
 			}
 
@@ -111,29 +132,56 @@ public class Character : MonoBehaviour {
 
 	}
 
+	public Structure SetPriority(){
+		//for each attribute, get value and current structure level
+		//get attribute with highest delta
+		//return Structure for that delta
+		Debug.Log("I'm deciding on a priority");
+		float maxScore = 100;
+		Structure selection;
+		selection = gameManager.village[Random.Range(0,gameManager.village.Length)];
+		foreach (Attribute i in skills) {
+			float score;
+			score = (i.school.level - i.value) + i.preference;
+			if (score > maxScore) {
+				maxScore = score;
+				selection = i.school;
+			}
+		}
+		Debug.Log ("My priority is " + selection);
+		return selection;
+	}
 
 	void AttributeGain(float xp, Structure school){
 		string attribute = "I wasted my life";
 
 		if (school.name == "dojo") {
 			attribute = "Stamina";
-			stamina += Mathf.RoundToInt(xp);
+			stamina.value += Mathf.RoundToInt(xp);
 		}
 		else if (school.name == "bath") {
-			health += Mathf.RoundToInt(xp);
+			health.value += Mathf.RoundToInt(xp);
 			attribute = "Health";
 		}
 		else if (school.name == "shrine") {
-			determination += Mathf.RoundToInt(xp);
+			determination.value += Mathf.RoundToInt(xp);
 			attribute = "Determination";
 		}
 		else if (school.name == "library") {
-			fame += Mathf.RoundToInt(xp);
+			fame = stamina.value + health.value + determination.value;
 			attribute = "Fame";
 		}
 		Debug.Log ("I've gained " + xp + " " + attribute);
 	}
 
+	void SetSprite(){
+		if (fame > 100) {
+			GetComponentInChildren<SpriteRenderer> ().sprite = sprites [1];
+			if (fame > 200) {
+				GetComponentInChildren<SpriteRenderer> ().sprite = sprites [2];
+			}
+		}
+	}
 
 	void LateUpdate(){
 		transform.eulerAngles = new Vector3(0,0,0);

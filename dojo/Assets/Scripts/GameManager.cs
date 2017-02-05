@@ -33,7 +33,7 @@ public class GameManager : MonoBehaviour {
 		if (noviceTimer <= gameTime) {
 			GameObject noviceInstance = Instantiate (samurai, new Vector3 (0, 0, -12), Quaternion.identity) as GameObject;
 			noviceInstance.transform.SetParent (samuraiHolder.transform);
-			noviceTimer = Mathf.RoundToInt(gameTime + Random.Range (5, 15));
+			noviceTimer = Mathf.RoundToInt(gameTime + Random.Range (50, 75));
 		}
 
 	}
